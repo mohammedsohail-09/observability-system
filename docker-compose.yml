@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  app:
+    build: ./app
+    ports:
+      - "5000:5000"
+    labels:
+      - "logging=promtail"
+    networks:
+      - observability
+
+  grafana:
+    image: grafana/grafana
+    user: "472:472"  # Optional: keep if needed
+    ports:
+      - "3000:3000"
+   # volumes:
+     # - ./grafana:/var/lib/grafana
+    environment:
+    - GF_SECURITY_ADMIN_USER= admin
+    - GF_SECURITY_ADMIN_PASSWORD= admin123
+    networks:
+      - observability
+
+  loki:
+    image: grafana/loki:2.9.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./loki:/loki
+    networks:
+      - observability
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - observability
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "6831:6831/udp"  # Tracing (UDP)
+      - "14268:14268"  # HTTP endpoint for spans
+    networks:
+      - observability
+
+
+networks:
+  observability:
